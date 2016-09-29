@@ -11,6 +11,7 @@
     'data': [
         'views/account_config_settings.xml',
         'views/account_bank_statement_import_view.xml',
+        'views/res_partner_bank.xml',
     ],
     'demo': [
         'demo/fiscalyear_period.xml',
