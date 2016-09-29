@@ -1,36 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Class to parse camt files."""
-##############################################################################
-#
-#    Copyright (C) 2013-2015 Therp BV <http://therp.nl>
-#    Copyright 2017 Open Net Sàrl
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as published
-#    by the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-##############################################################################
-
+# Copyright 2013-2018 Therp BV <https://therp.nl>.
+# Copyright 2017 Open Net Sàrl.
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 import re
 from copy import copy
 from datetime import datetime
 from lxml import etree
 
-from openerp import _
+from openerp import _, models
 
 from openerp.addons.account_bank_statement_import.parserlib import (
     BankStatement)
-
-from openerp import models
 
 
 class CamtParser(models.AbstractModel):
@@ -177,6 +157,7 @@ class CamtParser(models.AbstractModel):
         details_nodes = node.xpath(
             './ns:NtryDtls/ns:TxDtls', namespaces={'ns': ns})
         if len(details_nodes) == 0:
+            transaction['data'] = etree.tostring(node)
             yield transaction
             return
         transaction_base = transaction
