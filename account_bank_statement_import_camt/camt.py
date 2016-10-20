@@ -3,6 +3,7 @@
 ##############################################################################
 #
 #    Copyright (C) 2013-2015 Therp BV <http://therp.nl>
+#              (C) 2015 1200wd.com
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published
@@ -18,9 +19,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 ##############################################################################
+import logging
 import re
 from datetime import datetime
 from lxml import etree
+
+from openerp import _
 from openerp.addons.account_bank_statement_import.parserlib import (
     BankStatement)
 
@@ -147,38 +151,53 @@ class CamtParser(object):
         transaction.data = etree.tostring(node)
         return transaction
 
-    def get_balance_amounts(self, ns, node):
-        """Return opening and closing balance.
-
-        Depending on kind of balance and statement, the balance might be in a
-        different kind of node:
-        OPBD = OpeningBalance
-        PRCD = PreviousClosingBalance
-        ITBD = InterimBalance (first ITBD is start-, second is end-balance)
-        CLBD = ClosingBalance
+    def get_balance_type_node(self, node, balance_type):
         """
-        start_balance_node = None
-        end_balance_node = None
-        for node_name in ['OPBD', 'PRCD', 'CLBD', 'ITBD']:
-            code_expr = (
-                './ns:Bal/ns:Tp/ns:CdOrPrtry/ns:Cd[text()="%s"]/../../..' %
-                node_name
-            )
-            balance_node = node.xpath(code_expr, namespaces={'ns': ns})
-            if balance_node:
-                if node_name in ['OPBD', 'PRCD']:
-                    start_balance_node = balance_node[0]
-                elif node_name == 'CLBD':
-                    end_balance_node = balance_node[0]
-                else:
-                    if not start_balance_node:
-                        start_balance_node = balance_node[0]
-                    if not end_balance_node:
-                        end_balance_node = balance_node[-1]
-        return (
-            self.parse_amount(ns, start_balance_node),
-            self.parse_amount(ns, end_balance_node)
+        :param node: BkToCstmrStmt/Stmt/Bal node
+        :param balance type: one of 'OPBD', 'PRCD', 'ITBD', 'CLBD'
+        """
+        code_expr = (
+            './ns:Bal/ns:Tp/ns:CdOrPrtry/ns:Cd[text()="%s"]/../../..' %
+            balance_type
         )
+        return self.xpath(node, code_expr)
+
+    def get_start_balance(self, node):
+        """
+        Find the (only) balance node with code OpeningBalance, or
+        the only one with code 'PreviousClosingBalance'
+        or the first balance node with code InterimBalance in
+        the case of preceeding pagination.
+
+        :param node: BkToCstmrStmt/Stmt/Bal node
+        """
+        balance = 0
+        nodes = (
+            self.get_balance_type_node(node, 'OPBD') or
+            self.get_balance_type_node(node, 'PRCD') or
+            self.get_balance_type_node(node, 'ITBD')
+        )
+        if nodes:
+            balance = self.parse_amount(nodes[0])
+        return balance
+
+    def get_end_balance(self, node):
+        """
+        Find the (only) balance node with code ClosingBalance, or
+        the second (and last) balance node with code InterimBalance in
+        the case of continued pagination.
+
+        :param node: BkToCstmrStmt/Stmt/Bal node
+        """
+        balance = 0
+        nodes = (
+            self.get_balance_type_node(node, 'CLAV') or
+            self.get_balance_type_node(node, 'CLBD') or
+            self.get_balance_type_node(node, 'ITBD')
+        )
+        if nodes:
+            balance = self.parse_amount(nodes[-1])
+        return balance
 
     def parse_statement(self, ns, node):
         """Parse a single Stmt node."""
@@ -193,15 +212,26 @@ class CamtParser(object):
             ns, node, './ns:Id', statement, 'statement_id')
         self.add_value_from_node(
             ns, node, './ns:Acct/ns:Ccy', statement, 'local_currency')
-        (statement.start_balance, statement.end_balance) = (
-            self.get_balance_amounts(ns, node))
+        statement.start_balance = self.get_start_balance(node)
+        statement.end_balance = self.get_end_balance(node)
         transaction_nodes = node.xpath('./ns:Ntry', namespaces={'ns': ns})
+        total_amount = 0
         for entry_node in transaction_nodes:
             transaction = statement.create_transaction()
+            total_amount += transaction['transferred_amount']
             self.parse_transaction(ns, entry_node, transaction)
         if statement['transactions']:
             statement.date = datetime.strptime(
                 statement['transactions'][0].execution_date, "%Y-%m-%d")
+        if statement.start_balance == 0 and statement.end_balance != 0:
+            statement.start_balance = statement.end_balance - total_amount
+            _logger.debug(
+                _("Start balance %s calculated from end balance %s and"
+                  " Total amount %s."),
+                statement.start_balance,
+                statement.end_balance,
+                total_amount
+            )
         return statement
 
     def check_version(self, ns, root):
