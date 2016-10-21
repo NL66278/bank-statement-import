@@ -218,9 +218,9 @@ class CamtParser(object):
         total_amount = 0
         for entry_node in transaction_nodes:
             transaction = statement.create_transaction()
-            total_amount += transaction['transferred_amount']
             transaction.data = etree.tostring(entry_node)
             self.parse_transaction(entry_node, transaction)
+            total_amount += transaction.transferred_amount
         if statement['transactions']:
             statement.date = datetime.strptime(
                 statement['transactions'][0].execution_date, "%Y-%m-%d")
