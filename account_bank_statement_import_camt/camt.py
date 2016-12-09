@@ -1,25 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Class to parse camt files."""
-##############################################################################
-#
-#    Copyright (C) 2013-2015 Therp BV <http://therp.nl>
-#              (C) 2015 1200wd.com
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as published
-#    by the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-##############################################################################
-import logging
+# © 2013-2016 Therp BV <http://therp.nl>
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 import re
 from datetime import datetime
 from lxml import etree
@@ -239,6 +220,7 @@ class CamtParser(object):
             transaction = statement.create_transaction()
             self.parse_transaction(entry_node, transaction)
             total_amount += transaction.transferred_amount
+            transaction.data = etree.tostring(entry_node)
         if statement['transactions']:
             statement.date = datetime.strptime(
                 statement['transactions'][0].execution_date, "%Y-%m-%d")
