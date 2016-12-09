@@ -222,9 +222,6 @@ class CamtParser(object):
             self.parse_transaction(entry_node, transaction)
             total_amount += transaction.transferred_amount
             transaction.data = etree.tostring(entry_node)
-        if statement['transactions']:
-            statement.date = datetime.strptime(
-                statement['transactions'][0].execution_date, "%Y-%m-%d")
         if statement.start_balance == 0 and statement.end_balance != 0:
             statement.start_balance = statement.end_balance - total_amount
             _logger.debug(
@@ -234,6 +231,13 @@ class CamtParser(object):
                 statement.end_balance,
                 total_amount
             )
+        if statement['transactions']:
+            execution_date = statement['transactions'][0].execution_date
+            statement.date = datetime.strptime(execution_date, "%Y-%m-%d")
+            # Prepend date of first transaction to improve id uniquenes
+            if execution_date not in statement.statement_id:
+                statement.statement_id = "%s-%s" % (
+                    execution_date, statement.statement_id)
         return statement
 
     def check_version(self, root):
