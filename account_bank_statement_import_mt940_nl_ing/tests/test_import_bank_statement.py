@@ -29,6 +29,7 @@ class TestImport(TestStatementFile):
 
     def test_old_statement_import(self):
         """Test correct creation of single statement from old format."""
+        self.create_fiscalyear(2014)
         self._test_statement_import(
             'account_bank_statement_import_mt940_nl_ing', 'test-ing-old.940',
             'NL77INGB0574908765-2014-01-20',
@@ -37,6 +38,7 @@ class TestImport(TestStatementFile):
 
     def test_statement_import(self):
         """Test correct creation of single statement."""
+        self.create_fiscalyear(2014)
         transactions = [
             {
                 'remote_account': 'NL32INGB0000012345',

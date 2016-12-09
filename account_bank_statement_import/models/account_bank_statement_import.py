@@ -415,7 +415,7 @@ class AccountBankStatementImport(models.TransientModel):
             stmt_vals.pop('transactions', None)
             for line_vals in filtered_st_lines:
                 line_vals.pop('account_number', None)
-                line_vals.pop('statement_id', None)
+                line_vals.pop('transaction_id', None)
                 line_vals.pop('data', None)
             # Create the statement
             stmt_vals['line_ids'] = [

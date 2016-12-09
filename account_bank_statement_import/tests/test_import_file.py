@@ -1,25 +1,7 @@
 # -*- coding: utf-8 -*-
+# © 2015-2016 Therp BV <http://therp.nl>
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 """Provide common base for bank statement import tests."""
-##############################################################################
-#
-#    Copyright (C) 2015 Therp BV <http://therp.nl>.
-#
-#    All other contributions are (C) by their respective contributors
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
-#
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-##############################################################################
 import logging
 
 from openerp.tests.common import TransactionCase
@@ -35,6 +17,36 @@ class TestStatementFile(TransactionCase):
     No actual tests are done in this class, implementations are in
     subclasses in actual import modules.
     """
+    def create_fiscalyear(self, year):
+        """Check wether fiscal year exists. If not create with periods.
+
+        The example files contain dates from the year they were created. Not
+        all demo / test databases created in later years will contain the
+        fiscal years assumed by the test data. This method allows to
+        automatically create the needed data.
+
+        This method assumes fiscal years run from 1st of january to 31
+        of december, also for fiscal years that might already exist in
+        the database.
+        """
+        fiscalyear_model = self.env['account.fiscalyear']
+        date_start_iso = '%s-01-01' % str(year)
+        date_stop_iso = '%s-12-31' % str(year)
+        existing_year = fiscalyear_model.search([
+            ('date_start', '=', date_start_iso),
+            ('company_id', '=', self.env.user.company_id.id),
+        ])
+        if existing_year:
+            return  # Nothing todo
+        new_year = fiscalyear_model.create({
+            'name': 'Fiscal Year %s' % str(year),
+            'code': 'FY%s' % str(year),
+            'state': 'draft',
+            'company_id': self.env.user.company_id.id,
+            'date_start': date_start_iso,
+            'date_stop': date_stop_iso,
+        })
+        new_year.create_period()
 
     def _test_transaction(
             self, statement_obj, remote_account=False,
