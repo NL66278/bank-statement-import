@@ -25,8 +25,7 @@ class TestImport(TestStatementFile):
             {'remote_account': 'NL32INGB0000012345',
              'transferred_amount': 1.56,
              'value_date': '2014-02-20',
-             'ref': 'EV12341REP1231456T1234',
-            },
+             'ref': 'EV12341REP1231456T1234', },
         ]
         self._test_statement_import(
             'account_bank_statement_import_mt940_nl_ing', 'test-ing.940',
