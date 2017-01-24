@@ -131,25 +131,19 @@ class CamtParser(object):
             node, './ns:BookgDt/ns:Dt', transaction, 'execution_date'
         )
         self.add_value_from_node(
-            node, './ns:ValDt/ns:Dt', transaction, 'value_date'
-        )
-        transaction.transferred_amount = self.parse_amount(node)
-        details_node = self.xpath(
-            node, './ns:NtryDtls/ns:TxDtls'
-        )
-        if details_node:
-            self.parse_transaction_details(details_node[0], transaction)
-        if not transaction.message:
+            node, './ns:ValDt/ns:Dt', transaction, 'value_date')
+        transaction.transferred_amount = self.parse_amount(ns, node)
+        batch_node = self.xpath(node, './ns:NtryDtls/ns:Btch')
+        if batch_node:
             self.add_value_from_node(
-                node, './ns:AddtlNtryInf', transaction, 'message'
-            )
-        if not transaction.eref:
-            self.add_value_from_node(
-                node, [
-                    './ns:NtryDtls/ns:Btch/ns:PmtInfId',
-                ],
-                transaction, 'eref'
-            )
+                batch_node, ['/ns:PmtInfId',], transaction, 'eref')
+        else:
+            details_node = self.xpath(node, './ns:NtryDtls/ns:TxDtls')
+            if details_node:
+                self.parse_transaction_details(details_node[0], transaction)
+            if not transaction.message:
+                self.add_value_from_node(
+                    node, './ns:AddtlNtryInf', transaction, 'message')
         transaction.data = etree.tostring(node)
         return transaction
 
