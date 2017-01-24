@@ -132,7 +132,7 @@ class CamtParser(object):
         )
         self.add_value_from_node(
             node, './ns:ValDt/ns:Dt', transaction, 'value_date')
-        transaction.transferred_amount = self.parse_amount(ns, node)
+        transaction.transferred_amount = self.parse_amount(node)
         batch_node = self.xpath(node, './ns:NtryDtls/ns:Btch')
         if batch_node:
             self.add_value_from_node(
