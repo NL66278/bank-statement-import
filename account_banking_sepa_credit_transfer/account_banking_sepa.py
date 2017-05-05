@@ -34,11 +34,14 @@ class banking_export_sepa(orm.Model):
     def _generate_filename(self, cr, uid, ids, name, arg, context=None):
         res = {}
         for sepa_file in self.browse(cr, uid, ids, context=context):
-            ref = sepa_file.payment_order_ids[0].reference
-            if ref:
-                label = unidecode(ref.replace('/', '-'))
+            if not sepa_file.payment_order_ids:
+                label = 'no_payment_order'
             else:
-                label = 'error'
+                ref = sepa_file.payment_order_ids[0].reference
+                if ref:
+                    label = unidecode(ref.replace('/', '-'))
+                else:
+                    label = 'error'
             res[sepa_file.id] = 'sct_%s.xml' % label
         return res
 
@@ -48,7 +51,7 @@ class banking_export_sepa(orm.Model):
             'account_payment_order_sepa_rel',
             'banking_export_sepa_id', 'account_order_id',
             'Payment Orders',
-            readonly=True),
+            readonly=True, delete='cascade'),
         'nb_transactions': fields.integer(
             'Number of Transactions', readonly=True),
         'total_amount': fields.float(
