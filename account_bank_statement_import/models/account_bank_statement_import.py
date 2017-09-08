@@ -23,8 +23,8 @@ class AccountBankStatementLine(models.Model):
 
     _sql_constraints = [
         ('unique_import_id',
-         'unique (unique_import_id)',
-         'A bank account transactions can be imported only once !')
+         'unique (company_id, unique_import_id)',
+         'A bank account transaction can be imported only once!')
     ]
 
 
