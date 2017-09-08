@@ -387,7 +387,9 @@ class AccountBankStatementImport(models.TransientModel):
                 line_vals['unique_import_id']
             )
             if not unique_id or not bool(bsl_model.sudo().search(
-                    [('unique_import_id', '=', unique_id)], limit=1)):
+                    [('unique_import_id', '=', unique_id),
+                     ('company_id', '=', self.env.user.company_id.id), ],
+                    limit=1)):
                 filtered_st_lines.append(line_vals)
             else:
                 ignored_line_ids.append(unique_id)
